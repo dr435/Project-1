@@ -1,23 +1,18 @@
-import java.io.*;
 import java.util.*;
 
-class Arrays {
-
-    public static void main(String[] args) {
-
-    }
+public class Arrays {
 
     static int[] getRandomArray(int n) {
         // Create array of size n, Random object, and hashmap for used numbers
         Random rand = new Random();
         int[] arr = new int[n];
-        HashMap<Integer, Integer> used = new HashMap<Integer, Integer>;
+        HashMap<Integer, Integer> used = new HashMap<Integer, Integer>();
 
         // Iterate through the array getting random ints
         // If they're in the set, decrement and try again, else add to array and hashmap
         for (int i = 0; i < n; i++) {
-            int temp = rand.nextInt(100);
-            if (used.get(temp)) {
+            int temp = rand.nextInt(20 * n);
+            if (used.containsKey(temp)) {
                 i--;
                 continue;
             }

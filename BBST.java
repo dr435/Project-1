@@ -1,37 +1,42 @@
-import java.io.*;
-import java.util.*;
+import java.lang.Math;
+import java.util.ArrayList;
 
+class BBST {
 
-public class BST {
+    // Var to track level changes
+    static int levelCountBBST = 0;
 
-    static int levelCountBST = 0;
+    public static void main(String[] args) {
+        int[] randArr = Arrays.getRandomArray(10000);
+        int[] sortArr = Arrays.getSortedArray(10000);
 
-    static void insertRec(Node root, int data) {
-        // If the data is greater than root data
-        if (root.data < data) {
-            if (root.rightChild == null) {
-                // If no right child create new right child
-                root.rightChild = new Node(data);
-            }
-            else {
-                // Otherwise look at the next right subtree
-                insertRec(root.rightChild, data);
-            }
+        // Initialize the root nodes
+        Node rootBBST1 = new Node(randArr[0]);
+        Node rootBBST2 = new Node(sortArr[0]);
+        Node rootBST1 = new Node(randArr[0]);
+        Node rootBST2 = new Node(sortArr[0]);
+        Node rootBST3 = new Node(randArr[0]);
+        Node rootBST4 = new Node(sortArr[0]);
+
+        // Populate BST and BBST using random array
+        for (int i = 0; i < randArr.length; i++) {
+            // Insert into BBST
+            rootBBST1 = insertIter(rootBBST1, randArr[i]);
+            // Insert into BST
+            BST.insertRec(rootBST1, randArr[i]);
+            BST.insertIter(rootBST3, randArr[i]);
         }
-        // If data less than root data
-        else {
-            if (root.leftChild == null) {
-                // If no left child create one
-                root.leftChild = new Node(data);
-            }
-            else {
-                // Otherwise look at next left subtree
-                insertRec(root.leftChild, data);
-            }
+        // Populate BST and BBST using sorted array
+        for (int i = 1; i < sortArr.length; i++) {
+            // Insert into BBST
+            rootBBST2 = insertIter(rootBBST2, sortArr[i]);
+            // Insert into BST
+            BST.insertRec(rootBST2, sortArr[i]);
+            BST.insertIter(rootBST4, sortArr[i]);
         }
     }
 
-    static void insertIter(Node root, int data) {
+    static Node insertIter(Node root, int data) {
         Node curr = root;
         boolean insertFlag = true;
         // While node isn't inserted
@@ -49,7 +54,7 @@ public class BST {
                 else {
                     // Go to top of loop with curr at root of right subtree
                     curr = curr.rightChild;
-                    levelCountBST++;
+                    levelCountBBST++;
                 }
             }
             // If data less than current node data
@@ -65,41 +70,78 @@ public class BST {
                 else {
                     // Go to top of loop with curr as root of left subtree
                     curr = curr.leftChild;
-                    levelCountBST++;
+                    levelCountBBST++;
                 }
             }
         }
-    }
 
-    static Node deleteRec(int num, Node node) {
-        // If the tree is empty return the empty node
-        if (node == null) {
-            return node;
-        }
-        // If val is less than node data traverse down left subtree
-        if (num < node.data) {
-            node.leftChild = deleteRec(num, node.leftChild);
-        }
-        // If val is greater than node data traverse down right subtree
-        else if (num > node.data) {
-            node.rightChild = deleteRec(num, node.rightChild);
-        }
-        else {
-            // If node doesn't have a left child
-            if (node.leftChild == null) {
-                return node.rightChild;
-            }
-            // If node doesn't have a right child
-            else if (node.rightChild == null) {
-                return node.leftChild;
-            }
-            // Find in order successor and put it's data in curr node data
-            node.data = (node.rightChild).data;
+        // New root to be returned later
+        Node newRoot = root;
 
-            // Recursively delete in order successor in old position
-            node.rightChild = deleteRec(node.data, node.rightChild);
+        // Iterate up through tree, checking bf of nodes
+        while (curr != null) {
+            levelCountBBST++;
+            // Check for new root
+            if (curr.parent == null) {
+                newRoot = curr;
+            }
+
+            // Increase the height of current node
+            if (curr.leftChild != null || curr.rightChild != null) {
+                if (curr.leftChild == null && curr.rightChild != null) {
+                    curr.height = curr.rightChild.height + 1;
+                }
+                else if (curr.rightChild == null && curr.leftChild != null){
+                    curr.height = curr.leftChild.height + 1;
+                }
+                else {
+                    if (curr.leftChild.height > curr.rightChild.height) {
+                        curr.height = curr.leftChild.height + 1;
+                    }
+                    else {
+                        curr.height = curr.rightChild.height + 1;
+                    }
+                }
+            }
+            else {
+                curr.height = 1;
+            }
+
+            // If the tree is balanced, iterate up to curr's parent
+            //System.out.println(curr.data + ": " + balanceFactor(curr));
+            if (balanceFactor(curr) == 0 || Math.abs(balanceFactor(curr)) == 1) {
+                curr = curr.parent;
+            }
+            // If the subtree is left balanced
+            else if (balanceFactor(curr) > 1) {
+                // If its a left-left case
+                if (balanceFactor(curr.leftChild) > 0) {
+                    // Right rotate
+                    rightRotate(curr);
+                }
+                // If its a left-right case
+                else if (balanceFactor(curr.leftChild) < 0) {
+                    // Left rotate on curr left, right rotate on curr
+                    leftRotate(curr.leftChild);
+                    rightRotate(curr);
+                }
+            }
+            // If the subtree is right balanced
+            else if (balanceFactor(curr) < -1) {
+                // Right-right case
+                if (balanceFactor(curr.rightChild) < 0) {
+                    // Left rotate curr
+                    leftRotate(curr);
+                }
+                // Right-left case
+                else if (balanceFactor(curr.rightChild) > 0) {
+                    // Right rotate curr right, left rotate curr
+                    rightRotate(curr.rightChild);
+                    leftRotate(curr);
+                }
+            }
         }
-        return node;
+        return newRoot;
     }
 
     static void deleteIter(Node root, int data) {
@@ -109,11 +151,11 @@ public class BST {
         while (delFlag) {
             if (curr.data < data) {
                 curr = curr.rightChild;
-                levelCountBST++;
+                levelCountBBST++;
             }
             else if (curr.data > data) {
                 curr = curr.leftChild;
-                levelCountBST++;
+                levelCountBBST++;
             }
             else {
                 // If the node is a leaf
@@ -141,7 +183,7 @@ public class BST {
                         curr.leftChild.rightChild = null;
                         // Set curr to the node replacing the deleted node
                         curr = curr.leftChild;
-                        levelCountBST++;
+                        levelCountBBST++;
                         // Break out of the loop
                         delFlag = false;
                     }
@@ -153,7 +195,7 @@ public class BST {
                         curr.rightChild.rightChild = null;
                         // Set curr to the node replacing deleted node
                         curr = curr.rightChild;
-                        levelCountBST++;
+                        levelCountBBST++;
                         // Break out of loop
                         delFlag = false;
                     }
@@ -168,7 +210,7 @@ public class BST {
                         curr.leftChild.leftChild = null;
                         // Set curr to node replacing deleted node
                         curr = curr.leftChild;
-                        levelCountBST++;
+                        levelCountBBST++;
                         // Break out of loop
                         delFlag = false;
                     }
@@ -180,7 +222,7 @@ public class BST {
                         curr.leftChild.rightChild = null;
                         // Set curr to node replacing deleted node
                         curr = curr.rightChild;
-                        levelCountBST++;
+                        levelCountBBST++;
                         // Break out of loop
                         delFlag = false;
                     }
@@ -209,27 +251,45 @@ public class BST {
                 }
             }
         }
-    }
 
-    static Node findNextRec(Node node, int data) {
-        if (node == null) {
-            return node;
-        }
-
-        // ArrayList for node vals
-        ArrayList<Node> nodeVals = new ArrayList<Node>();
-        Node next = findNextRec(node.leftChild, data);
-        nodeVals.add(next);
-        next = findNextRec(node.rightChild, data);
-        nodeVals.add(next);
-
-        // Iterate through arraylist, find data and return next element
-        for (int i = 0; i < nodeVals.size(); i++) {
-            if (nodeVals.get(i).data == data) {
-                return nodeVals.get(i + 1);
+        // Iterate back up through the tree to rebalance
+        while (curr != null) {
+            levelCountBBST++;
+            // Increase the height of current node
+            curr.height--;
+            // If the tree is balanced, iterate up to curr's parent
+            if (Math.abs(balanceFactor(curr.parent)) == 1 || balanceFactor(curr.parent) == 0) {
+                curr = curr.parent;
+                continue;
+            }
+            // If the subtree is left balanced
+            else if (balanceFactor(curr.parent) > 1) {
+                // If its a left-left case
+                if (balanceFactor(curr) > 0) {
+                    // Right rotate curr parent
+                    rightRotate(curr.parent);
+                }
+                // If its a left-right case
+                else if (balanceFactor(curr) < 0) {
+                    // Left rotate on curr, right rotate on curr parent
+                    leftRotate(curr);
+                    rightRotate(curr.parent);
+                }
+            }
+            // If the subtree is right balanced
+            else if (balanceFactor(curr.parent) < 0) {
+                // Right-right case
+                if (balanceFactor(curr) < 0) {
+                    // Left rotate curr parent
+                    rightRotate(curr.parent);
+                }
+                // Right-left case
+                else if (balanceFactor(curr) > 1) {
+                    rightRotate(curr);
+                    leftRotate(curr.parent);
+                }
             }
         }
-        return node;
     }
 
     static Node findNextIter(Node root, int data) {
@@ -266,36 +326,15 @@ public class BST {
         return curr;
     }
 
-    static Node findPrevRec(Node node, int data) {
-        if (node == null) {
-            return node;
-        }
-
-        // ArrayList for node vals
-        ArrayList<Node> nodeVals = new ArrayList<Node>();
-        Node next = findPrevRec(node.leftChild, data);
-        nodeVals.add(next);
-        next = findPrevRec(node.rightChild, data);
-        nodeVals.add(next);
-
-        // Iterate through arraylist, find data and return next element
-        for (int i = 0; i < nodeVals.size(); i++) {
-            if (nodeVals.get(i).data == data) {
-                return nodeVals.get(i - 1);
-            }
-        }
-        return node;
-    }
-
-    static Node findPrevIter(int num, Node node) {
+    static Node findPrevIter(Node root, int data)  {
         // Iterate down the tree until you find the node you're looking for
-        Node curr = node;
-        while (curr.data != num) {
-            if (curr.data < num) {
+        Node curr = root;
+        while (curr.data != data) {
+            if (curr.data < data) {
                 curr = curr.rightChild;
                 continue;
             }
-            else if (curr.data > num) {
+            else if (curr.data > data) {
                 curr = curr.leftChild;
                 continue;
             }
@@ -307,7 +346,7 @@ public class BST {
         // Otherwise check all the parents
         else {
             while (curr.parent != null) {
-                if (curr.parent.data < num) {
+                if (curr.parent.data < data) {
                     return curr.parent;
                 }
                 else {
@@ -316,15 +355,6 @@ public class BST {
             }
         }
         return curr;
-    }
-
-    static Node findMinRec(Node node) {
-        // If there is a left child, recursively find the lowest height left child
-        if (node.leftChild != null) {
-            findMinRec(node.leftChild);
-        }
-        // If no more left children return the value of the current left child
-        return node;
     }
 
     static Node findMinIter(Node node) {
@@ -337,15 +367,6 @@ public class BST {
         return curr;
     }
 
-    static Node findMaxRec(Node node) {
-        // If there is a right child recursively find the lowest height right child
-        if (node.rightChild != null) {
-            findMaxRec(node.rightChild);
-        }
-        // If no more right children return the val of current right child
-        return node;
-    }
-
     static Node findMaxIter(Node node) {
         Node curr = node;
         // While there are right children use temp node to find lowest height right child
@@ -356,20 +377,75 @@ public class BST {
         return curr;
     }
 
-    static private void swap(Node node1, Node node2) {
-        // Store the vals of node 2 in a temp node
-        Node temp = node2;
-        temp.leftChild = node2.leftChild;
-        temp.rightChild = node2.rightChild;
+    // TODO: for both rotations adjust height values
+    // Rotate the subtree to the right
+    // The inserted node is the top node of the rotation
+    static void rightRotate(Node node) {
+        Node parent = node;
+        Node mid = node.leftChild;
+        mid.parent = parent.parent;
+        if (mid.parent != null) {
+            if (mid.parent.leftChild == parent) {
+                mid.parent.leftChild = mid;
+            }
+            else if(mid.parent.rightChild == parent){
+                mid.parent.rightChild = mid;
+            }
+        }
+        parent.leftChild = mid.rightChild;
+        mid.rightChild = parent;
+        parent.parent = mid;
+        node.height--;
+    }
 
-        // Swap the vals of node 1 into node 2
-        node2.data = node1.data;
-        node2.leftChild = node1.leftChild;
-        node2.rightChild = node1.rightChild;
+    // Rotate the subtree to the left
+    static void leftRotate(Node node) {
+        Node parent = node;
+        Node mid = node.rightChild;
+        mid.parent = parent.parent;
+        if (mid.parent != null) {
+            if (mid.parent.leftChild == parent) {
+                mid.parent.leftChild = mid;
+            }
+            else if (mid.parent.rightChild == parent){
+                mid.parent.rightChild = mid;
+            }
+        }
+        parent.rightChild = mid.leftChild;
+        mid.leftChild = parent;
+        parent.parent = mid;
+        node.height--;
+    }
 
-        // Swap the vals of temp into node 1
-        node1.data = temp.data;
-        node1.leftChild = temp.leftChild;
-        node1.rightChild = temp.rightChild;
+    // Find the balance factor of a node
+    static private int balanceFactor(Node node) {
+        if (node.leftChild == null && node.rightChild == null) {
+            return 0;
+        }
+        else if (node.rightChild ==  null && node.leftChild != null) {
+            return node.leftChild.height;
+        }
+        else if (node.leftChild == null && node.rightChild != null) {
+            return -node.rightChild.height;
+        }
+        else {
+            return node.leftChild.height - node.rightChild.height;
+        }
+    }
+}
+
+class Node {
+    int data;
+    int height;
+    Node leftChild;
+    Node rightChild;
+    Node parent;
+
+    public Node(int data) {
+        this.data = data;
+        height = 1;
+        leftChild = null;
+        rightChild = null;
+        parent = null;
     }
 }
